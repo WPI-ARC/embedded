@@ -80,19 +80,19 @@ int main(void) {
     timer.start();
     
     while(1) {
-        pc.printf("%i, %f, %f, %f, %f, %f\r\n", timer.read_ms(), positionave, actualf, desiredf, pressure, dutycycle);
+        pc.printf("%i, %f, %f, %f, %f, %f, %f, %f, %f\r\n", timer.read_ms(), positionave, actualf, desiredf, pressure, dutycycle, f_pterm, f_iterm, f_dterm);
     }
 }
 
 
 void init(void) {
-    f_kp_p = 30;
-    f_ki_p = 75;
+    f_kp_p = 75;
+    f_ki_p = 90;
     f_kd_p = 5;
     
-    f_kp_n = 0;
-    f_ki_n = 0;
-    f_kd_n = 5;
+    f_kp_n = 5;
+    f_ki_n = 5;
+    f_kd_n = 20;
     
     p_kp = 5; 
     p_ki = 1;
@@ -116,15 +116,15 @@ void computeControl(void) {
             if(fabs(errorf) < 0.075)
                 f_iterm = (f_iterm * ALPHA) + (f_ki_p * errorf * TIMESTEP);
             else
-                f_iterm = (f_ki_p * errorf * TIMESTEP);
+                f_iterm = (f_iterm * ALPHA);
             f_dterm = f_kd_p * (errorf - l_errorf);
         } else {
             f_pterm = f_kp_n * errorf;
             if(fabs(errorf) < 0.05)
                 f_iterm = (f_iterm * ALPHA) + (f_ki_n * errorf * TIMESTEP);
             else
-                f_iterm = f_ki_n * errorf * TIMESTEP;
-            f_dterm = f_kd_n * errorf * TIMESTEP;
+                f_iterm = (f_iterm * ALPHA);
+            f_dterm = f_kd_n * (errorf - l_errorf);
         }
         
         cap(-25.0, &f_pterm, 25);
@@ -143,7 +143,7 @@ void computeControl(void) {
         pressure = f_pterm + f_iterm + f_dterm + forceff + posff;;
         cap(0.0, &pressure, 25.0);
     } else {
-        pressure += 0.01;
+       pressure += 0.01;
     }
     
     /***** PRESSURE CONTROL *****/
@@ -185,29 +185,69 @@ void pwmout(void) {
 }
 
 void increment(void) {
-   if(actualf > CONTACT) {
-       if(step < 200) {
-           desiredf = ((float)((int)(step/20)))/10.0;
-       } else if(step < 400) {
-           desiredf = ((float)((int)((400-step)/20)))/10.0;
-       } else if(step < 600) {
-           desiredf += 0.005;
-       } else if(step < 800) {
-           desiredf -= 0.005;
-       } else if(step < 900) {
-           desiredf = 0.3;
-       } else if(step < 1000) {
-           desiredf = 0.8;
-       } else if(step < 1100) {
-           desiredf = 0.3;
-       } else {
-           desiredf = 0.1;
-       }
-           
-       step++;
+    if(actualf > CONTACT) {
+        if(step < 400) {
+            desiredf = ((float)((int)(step/40)))/10.0;
+        } else if(step < 800) {
+            desiredf = ((float)((int)((800-step)/40)))/10.0;
+        } else if(step < 1000) {
+            desiredf += 0.005;
+        } else if(step < 1200) {
+            desiredf -= 0.005;
+        } else if(step < 1300) {
+            desiredf = 0.3;
+        } else if(step < 1400) {
+            desiredf = 0.8;
+        } else if(step < 1500) {
+            desiredf = 0.3;
+        } else {
+            desiredf = 0.1;
+        }
+
+        // if(step < 900) {            //0.0
+        //     desiredf += 0.001;
+        // } else if(step < 1800) {
+        //     desiredf -= 0.001;
+        // } else if(step < 2300) {
+        //     desiredf = 0.1;
+        // } else if(step < 2750) {     //0.0
+        //     desiredf += 0.002;
+        // } else if(step < 3200) {
+        //     desiredf -= 0.002;
+        // } else if(step < 3700) {
+        //     desiredf = 0.1;
+        // } else if(step < 4000) {     //0.0
+        //     desiredf += 0.003;
+        // } else if(step < 4300) {
+        //     desiredf -= 0.003;
+        // } else if(step < 4800) {
+        //     desiredf = 0.1;
+        // } else if(step < 5025) {     //0.0
+        //     desiredf += 0.004;
+        // } else if(step < 5250) {
+        //     desiredf -= 0.004;
+        // } else if(step < 5750) {
+        //     desiredf = 0.1;
+        // } else if(step < 5930) {     //0.0
+        //     desiredf += 0.005;
+        // } else if(step < 6110) {
+        //     desiredf -= 0.005;
+        // } else {
+        //     desiredf = 0.1;
+        // }
+
+        // if(step < 50) {
+        //     desiredf = 0.1;
+        // } else if(step < 150) {
+        //     desiredf = 0.95;
+        // } else {
+        //     desiredf = 0.1;
+        // }
+
+        step++;
        
-       cap(0.0, &desiredf, 1.0);
-   }
+        cap(0.1, &desiredf, 1.0);
+    }
 }
 
 void cap(float min, float* val, float max) {
