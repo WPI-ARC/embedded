@@ -2,7 +2,6 @@
 #include <math.h>
 
 #define EULER 2.71828
-#define SIGMOID (-15)
 
 #define CONTACT 0.05
 #define TIMESTEP 0.01
@@ -59,13 +58,14 @@ float f_kp_p, f_ki_p, f_kd_p;
 float f_kp_n, f_ki_n, f_kd_n;
 float f_pterm = 0, f_iterm = 0, f_dterm = 0;
 float forceterm = 0;
-float forceff = 0;
+float forceff = 0, f_positionff = 0;
 
 float actualp = 0, desiredp = 0, errorp = 0, l_errorp = 0;
-float p_kp, p_ki, p_kd;
+float p_kp_p, p_ki_p, p_kd_p;
+float p_kp_n, p_ki_n, p_kd_n;
 float p_pterm = 0, p_iterm = 0, p_dterm = 0;
 float positionterm = 0;
-float positionff = 0;
+float p_positionff = 0;
 
 float pressure = 0;
 
@@ -95,7 +95,7 @@ int main(void) {
     timer.start();
     
     while(1) {
-        pc.printf("%i, %f, %f, %f, %f, %f, %f, %f, %f, %f\r\n", timer.read_ms(), actualp, actualf, desiredf, pressure, dutycycle, f_pterm, f_iterm, f_dterm, weightp);
+        pc.printf("%i, %f, %f, %f, %f, %f, %f, %f, %f, %f\r\n", timer.read_ms(), actualf, desiredf, actualp, desiredp, dutycycle, forceterm, positionterm, weightf, weightp);
     }
 }
 
@@ -109,9 +109,13 @@ void init(void) {
     f_ki_n = 5;
     f_kd_n = 0;
 
-    p_kp = 25;
-    p_ki = 25;
-    p_kd = 0;
+    p_kp_p = 50;
+    p_ki_p = 25;
+    p_kd_p = 0;
+
+    p_kp_n = 75;
+    p_ki_n = 75;
+    p_kd_n = 0;
     
     pre_kp = 5; 
     pre_ki = 1;
@@ -119,13 +123,13 @@ void init(void) {
 }
 
 float computeWeight(float force, float max_force, float position, float position_setpoint) {
-    float x_norm = (force - CONTACT) / (max_force - CONTACT);
-    cap(0, &x_norm, 1);
-    float y_norm = (position - NEUTRAL) / (position_setpoint - NEUTRAL);
+    float y_norm = (force - CONTACT) / (max_force - CONTACT);
     cap(0, &y_norm, 1);
+    float x_norm = (position - NEUTRAL) / (position_setpoint - NEUTRAL);
+    cap(0, &x_norm, 1);
 
-    float fn_out = SIGMOID * (0.5 + (x_norm / 2) - y_norm);
-    return (1 / (1 + pow(EULER, fn_out)));
+    float power = (-15) * (0.5 + (x_norm / 2) - y_norm);
+    return (1 / (1 + pow(EULER, power)));
 }
 
 void computeControl(void) {
@@ -134,6 +138,7 @@ void computeControl(void) {
     l_errorf = errorf;
     errorf = desiredf - actualf;
     
+    cap(0.2, &desiredp, 1.0);
     position[filter_index] = (botStretchEgain.read() + midStretchEgain.read() + topStretchEgain.read()) / 3;
     filter_index++;
     if(filter_index == 5)
@@ -167,24 +172,41 @@ void computeControl(void) {
     cap(-25.0, &f_dterm, 25);
 
     forceff = (FSLOPE * desiredf) + FOFFSET;
-    forceterm = weightf * (f_pterm + f_iterm + f_dterm + forceff);
-
-    /***** POSITION CONTROL *****/
-    p_pterm = p_kp * errorp;
-    p_iterm = (p_iterm * ALPHA) + (p_ki * errorp * TIMESTEP);
-    p_dterm = p_kd * (errorp - l_errorp) / TIMESTEP;
-
-    positionterm = weightp * (p_pterm + p_iterm + p_dterm);
-    
-    /***** COMBINE TERMS *****/
     for(int i = 0; i < POSITION_LENGTH; ++i) {
         if(actualp > POSITION_THRESHOLDS[i]) {
-            positionff = (POSITION_SLOPES[i] * actualp) + POSITION_OFFSETS[i];
+            f_positionff = (POSITION_SLOPES[i] * actualp) + POSITION_OFFSETS[i];
             break;
         }
     }
+    forceterm = f_pterm + f_iterm + f_dterm + forceff + f_positionff;
+
+    /***** POSITION CONTROL *****/
+    if(errorp >= 0) {
+        p_pterm = p_kp_p * errorp;
+        p_iterm = (p_iterm * ALPHA) + (p_ki_p * errorp * TIMESTEP);
+        p_dterm = p_kd_p * (errorp - l_errorp) / TIMESTEP;
+    } else {
+        p_pterm = p_kp_n * errorp;
+        p_iterm = (p_iterm * ALPHA) + (p_ki_n * errorp * TIMESTEP);
+        p_dterm = p_kd_n * (errorp - l_errorp) / TIMESTEP;
+    }
+
+    cap(-25.0, &p_pterm, 25);
+    cap(-25.0, &p_iterm, 25);
+    cap(-25.0, &p_dterm, 25);
+
+    for(int i = 0; i < POSITION_LENGTH; ++i) {
+        if(desiredp > POSITION_THRESHOLDS[i]) {
+            p_positionff = (POSITION_SLOPES[i] * desiredp) + POSITION_OFFSETS[i];
+            break;
+        }
+    }
+
+    positionterm = p_pterm + p_iterm + p_dterm + p_positionff;
+    
+    /***** COMBINE TERMS *****/
     //TODO: Add weights
-    pressure = (0 * forceterm) + (1 * positionterm) + positionff;
+    pressure = (weightf * forceterm) + (weightp* positionterm);
 
     cap(0.0, &pressure, 25.0);
     
@@ -244,19 +266,37 @@ void increment(void) {
         // } else {
         //     desiredf = 0.1;
         // }
-
-        if(step < 500) {
-            desiredp += 0.001;
-        } else if(step < 1000) {
-            desiredp -= 0.001;
-        } else {
-            desiredp = 0.4;
-        }
-
-        step++;
-        cap(0.2, &desiredp, 1.0);
-        cap(0.1, &desiredf, 1.0);
+        // step++;
     // }
+
+    desiredf = 0.8;
+    if(step < 50) {
+        desiredp = 0.2;
+    } else if(step < 250) {
+        desiredp = (((float)((int)((step-50)/40)))/10.0) + 0.2;
+    } else if(step < 450) {
+        desiredp = 0.6 - (((float)((int)((step-250)/40)))/10.0);
+    } else if(step < 500) {
+        desiredp = 0.2;
+    } else if(step < 600) {
+        desiredp += 0.0035;
+    } else if(step < 700) {
+        desiredp -= 0.0035;
+    } else if(step < 750) {
+        desiredp = 0.25;
+    } else if(step < 850) {
+        desiredp = 0.4;
+    } else if(step < 950) {
+        desiredp = 0.6;
+    } else if(step < 1050) {
+        desiredp = 0.4;
+    } else {
+        desiredp = 0.25;
+    }
+    step++;
+
+    cap(0.20, &desiredp, 1.0);
+    cap(0.1, &desiredf, 1.0);
 }
 
 void cap(float min, float* val, float max) {
