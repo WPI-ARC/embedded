@@ -1,5 +1,7 @@
 #include "mbed.h"
+#include "I2C.h"
 #include <math.h>
+#include "util.h"
 
 #define EULER 2.71828
 
@@ -18,7 +20,6 @@ void init(void);
 void computeControl(void);
 void pwmout(void);
 void increment(void);
-void cap(float min, float* val, float max);
 float computeWeight(float force, float max_force, float position, float position_setpoint);
 
 
@@ -32,6 +33,7 @@ AnalogIn botStretchEgain(PTB2); //P0_12
 DigitalOut solenoid(PTA2); //P0_9
 
 Serial pc(USBTX, USBRX);
+I2C i2c(PTE25, PTE24);
 
 /***** Timer Declaration *****/
 Ticker fcontroller;
@@ -40,6 +42,8 @@ Ticker incrementer;
 Timer timer;
 
 /***** Constant Declarations *****/
+static const int I2CADDR[4] = {0x2, 0x4, 0x6, 0x8};
+
 static const int POSITION_LENGTH = 7;
 static const float POSITION_THRESHOLDS[7] = { 0.6742,  0.5878, 0.3682,  0.3275,  0.2403,  0.1640,  0.0};
 static const float POSITION_SLOPES[7]     = {19.6842, 13.3633, 9.5637, 20.6475, 14.4391, 33.0176, 82.7497};
@@ -84,18 +88,36 @@ int width = 0;
 
 int contact = 0;
 
+char i2cbuf[100];
+
+int controlFlag = 0;
+int pwmFlag = 0;
+void doControl(void) {
+    controlFlag = 1;
+}
 
 /***** Main *****/
 int main(void) {
     init();
-    
-    fcontroller.attach(&computeControl, TIMESTEP);
+
+    i2c.frequency(400000);
+
+    fcontroller.attach(&doControl, TIMESTEP);
     pwm.attach(&pwmout, 0.0002);
     incrementer.attach(&increment, 0.1);
     timer.start();
     
     while(1) {
-        pc.printf("%i, %f, %f, %f, %f, %f, %f, %f, %f, %f\r\n", timer.read_ms(), actualf, desiredf, actualp, desiredp, dutycycle, forceterm, positionterm, weightf, weightp);
+        // pc.printf("%i, %f, %f, %f, %f, %f, %f, %f, %f, %f\r\n", timer.read_ms(), actualf, desiredf, actualp, desiredp, dutycycle, forceterm, positionterm, weightf, weightp);
+    
+        if(controlFlag) {
+            // if(i2c.read(addr, buf, 100, 0) == 0) {
+            //     float* fbuf = (float *)buf;
+            //     pc.printf("%f\r\n", fbuf[0]);
+            // } else {
+            //     pc.printf("Failed\n\r");
+            // }
+        }
     }
 }
 
@@ -297,11 +319,4 @@ void increment(void) {
 
     cap(0.20, &desiredp, 1.0);
     cap(0.1, &desiredf, 1.0);
-}
-
-void cap(float min, float* val, float max) {
-    if(*val < min)
-       *val = min;
-    if(*val > max)
-       *val = max;
 }
