@@ -1,3 +1,7 @@
+#pragma once
+#include "PID.h"
+#include "PiecewiseFit.h"
+
 class ControlModule {
     float alpha;
     PiecewiseFit* forceff;

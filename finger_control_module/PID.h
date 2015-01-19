@@ -1,3 +1,5 @@
+#pragma once
+
 class PID {
 	float alpha;
 	float kp_p, ki_p, kd_p;

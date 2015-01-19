@@ -4,6 +4,10 @@
 #include "ControlModule.h"
 #include "util.h"
 
+#define EULER 2.71828
+#define CONTACT 0.05
+#define NEUTRAL 0.2
+
 int FORCE_LENGTH = 1;
 float FORCE_THRESHOLDS[1] = {0.0};
 float FORCE_SLOPES[1]     = {0.8616};
@@ -78,7 +82,7 @@ float ControlModule::compute(float actualf, float actualp, float actualpre, floa
     float desiredpre = 0.0122*pressure + 0.1619;
     float dutycycle = computeDutycycle(desiredpre, actualpre, time);
     cap(0.0, &dutycycle, 1.0);
-    
+
     return dutycycle;
 }
 
@@ -90,4 +94,14 @@ void ControlModule::setMaximumForce(float force) {
 void ControlModule::setDesiredPosition(float position) {
     cap(0.2, &position, 0.6);
     desiredp = position;
+}
+
+float ControlModule::computeWeight(float actualf, float desiredf, float actualp, float desiredp) {
+    float y_norm = (actualf - CONTACT) / (desiredf - CONTACT);
+    cap(0, &y_norm, 1);
+    float x_norm = (actualp - NEUTRAL) / (desiredp - NEUTRAL);
+    cap(0, &x_norm, 1);
+
+    float power = (-15) * (0.5 + (x_norm / 2) - y_norm);
+    return (1 / (1 + pow(EULER, power)));
 }

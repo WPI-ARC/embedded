@@ -1,3 +1,5 @@
+#pragma once
+
 class PiecewiseFit {
 	int length;
 	float* thresholds;
