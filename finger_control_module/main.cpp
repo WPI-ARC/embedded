@@ -36,12 +36,13 @@ Ticker incrementer;
 Timer timer;
 
 /***** Variable Declarations *****/
-static const int I2CADDR[4] = {0x2, 0x4, 0x6, 0x8};
+static const int addr[4] = {0x02, 0x04, 0x06, 0x08};
 ControlModule* controller[4];
 float dutycycle[4] = {0, 0, 0, 0};
 
 int width = 0; // TODO: PWM object
-
+char buf[100];
+float* fbuf = (float *)buf;
 
 /***** Temporary Variable Declarations *****/
 float actualf = 0, desiredf = 0;
@@ -81,23 +82,22 @@ int main(void) {
         if(controlFlag) {
             controlFlag = 0;
 
-            // if(i2c.read(addr, buf, 100, 0) == 0) {
-            //     float* fbuf = (float *)buf;
-            //     pc.printf("%f\r\n", fbuf[0]);
-            // } else {
-            //     pc.printf("Failed\n\r");
-            // }
+            if(i2c.read(addr[0], buf, 100, 0) == 0) {
+                pc.printf("%f\r\n", fbuf[0]);
+            } else {
+                pc.printf("Failed\n\r");
+            }
 
-            actualf = topForceEgain.read();
-            position[filter_index] = (botStretchEgain.read() + midStretchEgain.read() + topStretchEgain.read()) / 3;
+            actualf = fbuf[0];
+            position[filter_index] = (fbuf[2] + fbuf[3] + fbuf[4]) / 3;
             filter_index++;
             if(filter_index == 5)
                 filter_index = 0;
             float actualp = (position[0] + position[1] + position[2] + position[3] + position[4]) / 5;
-            float actualpre = pressureSensor.read();
+            float actualpre = fbuf[1];
 
             dutycycle[0] = controller[0]->compute(actualf, actualp, actualpre, timer.read());
-            solenoid.write(dutycycle[0]);
+            // solenoid.write(dutycycle[0]);
             pc.printf("%i, %f\r\n", timer.read_ms(), dutycycle[0]);
         }
     }
