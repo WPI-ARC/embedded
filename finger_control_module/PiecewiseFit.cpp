@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <string.h>
 #include "PiecewiseFit.h"
 
 PiecewiseFit::PiecewiseFit(int length, float* thresholds, float* slopes, float* offsets) {
@@ -6,6 +7,10 @@ PiecewiseFit::PiecewiseFit(int length, float* thresholds, float* slopes, float* 
 	this->thresholds = (float*)malloc(length*sizeof(float));
 	this->slopes = (float*)malloc(length*sizeof(float));
 	this->offsets = (float*)malloc(length*sizeof(float));
+
+	memcpy(this->thresholds, thresholds, length*sizeof(float));
+	memcpy(this->slopes, slopes, length*sizeof(float));
+	memcpy(this->offsets, offsets, length*sizeof(float));
 }
 
 PiecewiseFit::~PiecewiseFit() {
@@ -23,6 +28,10 @@ void PiecewiseFit::updateFit(int length, float* thresholds, float* slopes, float
 	this->thresholds = (float*)malloc(length*sizeof(float));
 	this->slopes = (float*)malloc(length*sizeof(float));
 	this->offsets = (float*)malloc(length*sizeof(float));
+
+	memcpy(this->thresholds, thresholds, length*sizeof(float));
+	memcpy(this->slopes, slopes, length*sizeof(float));
+	memcpy(this->offsets, offsets, length*sizeof(float));
 }
 
 float PiecewiseFit::getEstimate(float xval) {
