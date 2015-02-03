@@ -3,36 +3,24 @@
 #include <math.h>
 #include "util.h"
 #include "ControlModule.h"
+#include "Ethernet.h"
+#include "Output.h"
 
 #define CONTACT 0.05
 #define TIMESTEP 0.01
 
 
 /***** Function Prototypes *****/
-void init(void);
-void computeControl(void);
-void pwmout(void);
-void increment(void);
-float computeWeight(float force, float max_force, float position, float position_setpoint);
+void frameReceivedCB(char* buffer);
 
+PwmOut solenoid(PTA2);
 
-/***** Pin Definitions *****/
-AnalogIn topForceEgain(PTC11); //P0_13
-AnalogIn pressureSensor(PTC10); //P0_11
-AnalogIn topStretchEgain(PTB10); //P0_14
-AnalogIn midStretchEgain(PTB3); //P0_16
-AnalogIn botStretchEgain(PTB2); //P0_12
-
-PwmOut solenoid(PTA2); //P0_9
-// DigitalOut solenoid(PTA2);
-
-Serial pc(USBTX, USBRX);
+Output pc;
 I2C i2c(PTE25, PTE24);
+Ethernet ethernet;
 
 /***** Timer Declaration *****/
 Ticker fcontroller;
-Ticker pwm;
-Ticker incrementer;
 Timer timer;
 
 /***** Variable Declarations *****/
@@ -40,7 +28,6 @@ static const int addr[4] = {0x02, 0x04, 0x06, 0x08};
 ControlModule* controller[4];
 float dutycycle[4] = {0, 0, 0, 0};
 
-int width = 0; // TODO: PWM object
 char buf[100];
 float* fbuf = (float *)buf;
 
@@ -51,40 +38,48 @@ float desiredp = 0;
 float position[5] = {0, 0, 0, 0, 0};
 int filter_index = 0;
 
-int step = 0;
-
 int controlFlag = 0;
 void doControl(void) {
     controlFlag = 1;
 }
 
+char eth_buffer[256];
+int eth_buffer_size = 256;
+
 /***** Main *****/
 int main(void) {
     solenoid.period(0.02);
-    solenoid.write(0);
+    solenoid.write(0.0);
     i2c.frequency(400000);
-    pc.baud(115200);
-    pc.printf("Begin Main\r\n");
+
+    serial.printf("Begin Main\r\n");
 
     controller[0] = new ControlModule();
 
     pc.printf("Control Object Created\r\n");
 
     fcontroller.attach(&doControl, TIMESTEP);
-    incrementer.attach(&increment, 0.1);
     timer.start();
     
     pc.printf("Begin Main Loop\r\n");
     while(1) {
-        pc.printf("l");
+        // pc.printf("l");
         // pc.printf("%i, %f, %f, %f, %f, %f, %f, %f, %f, %f\r\n", timer.read_ms(), actualf, desiredf, actualp, desiredp, dutycycle, forceterm, positionterm, weightf, weightp);
     
+        // int read = udp.receiveFrom(mosi, eth_buffer, eth_buffer_size);
+        // if(read == eth_buffer_size) {
+        //     printf("Frame received\r\n");
+        //     frameReceivedCB(eth_buffer);
+        // } else if(read >= 0) {
+        //     printf("*** Partial frame received ***\r\n");
+        // } else {
+        //     ;
+        // } 
+
         if(controlFlag) {
             controlFlag = 0;
 
-            if(i2c.read(addr[0], buf, 100, 0) == 0) {
-                pc.printf("%f\r\n", fbuf[0]);
-            } else {
+            if(i2c.read(addr[0], buf, 100, 0) != 0) {
                 pc.printf("Failed\n\r");
             }
 
@@ -97,62 +92,41 @@ int main(void) {
             float actualpre = fbuf[1];
 
             dutycycle[0] = controller[0]->compute(actualf, actualp, actualpre, timer.read());
-            // solenoid.write(dutycycle[0]);
-            pc.printf("%i, %f\r\n", timer.read_ms(), dutycycle[0]);
+            solenoid.write(dutycycle[0]);
         }
     }
 }
 
-void increment(void) {
-    // if(actualf > CONTACT) {
-    //     if(step < 400) {
-    //         desiredf = ((float)((int)(step/40)))/10.0;
-    //     } else if(step < 800) {
-    //         desiredf = ((float)((int)((800-step)/40)))/10.0;
-    //     } else if(step < 1000) {
-    //         desiredf += 0.005;
-    //     } else if(step < 1200) {
-    //         desiredf -= 0.005;
-    //     } else if(step < 1300) {
-    //         desiredf = 0.3;
-    //     } else if(step < 1400) {
-    //         desiredf = 0.8;
-    //     } else if(step < 1500) {
-    //         desiredf = 0.3;
-    //     } else {
-    //         desiredf = 0.1;
-    //     }
-    //     step++;
-    // }
-
-    desiredf = 0.8;
-    if(step < 50) {
-        desiredp = 0.2;
-    } else if(step < 250) {
-        desiredp = (((float)((int)((step-50)/40)))/10.0) + 0.2;
-    } else if(step < 450) {
-        desiredp = 0.6 - (((float)((int)((step-250)/40)))/10.0);
-    } else if(step < 500) {
-        desiredp = 0.2;
-    } else if(step < 600) {
-        desiredp += 0.0035;
-    } else if(step < 700) {
-        desiredp -= 0.0035;
-    } else if(step < 750) {
-        desiredp = 0.25;
-    } else if(step < 850) {
-        desiredp = 0.4;
-    } else if(step < 950) {
-        desiredp = 0.6;
-    } else if(step < 1050) {
-        desiredp = 0.4;
-    } else {
-        desiredp = 0.25;
+void frameReceivedCB(char* buffer) {
+    //Parse info
+    uint32_t command = (buffer[0]<<24) + (buffer[1]<<16) + (buffer[2]<<8) + buffer[3]; // first 4 bytes
+    uint8_t len = buffer[4];
+    char data[len];
+    memcpy(data, buffer + 5, len);
+    pc.printf("Recv cmd, data: %d, [%s]\r\n", command, data);
+    // Respond
+    char response[eth_buffer_size] = {};
+    switch (command) {
+            case 0: // Set finger forces/positions
+                break;
+            case 1: //
+                break;
+            case 2: // 
+                break;
+            default:
+                break;
     }
-    step++;
-
-    cap(0.20, &desiredp, 1.0);
-    cap(0.1, &desiredf, 1.0);
-    controller[0]->setMaximumForce(desiredf);
-    controller[0]->setDesiredPosition(desiredp);
+    float afloat = -0.329774;
+    char* floatptr = (char *)(&afloat);
+    response[4] = 0x08;
+    response[5] = floatptr[0];
+    response[6] = floatptr[1];
+    response[7] = floatptr[2];
+    response[8] = floatptr[3];
+    afloat = 0.635675;
+    response[9] = floatptr[0];
+    response[10] = floatptr[1];
+    response[11] = floatptr[2];
+    response[12] = floatptr[3];
+    udp.sendTo(miso, response, eth_buffer_size);
 }
