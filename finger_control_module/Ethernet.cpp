@@ -13,10 +13,10 @@ void Ethernet::init(void) {
     miso.set_address("192.168.1.2", 10002);
 }
 
-void send(char* response) {
+void Ethernet::send(char* response) {
     udp.sendTo(miso, response, 256);
 }
 
-int recieve(char* buffer) {
+int Ethernet::recieve(char* buffer) {
 	return udp.receiveFrom(mosi, buffer, 256);
 }

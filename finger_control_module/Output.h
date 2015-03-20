@@ -8,13 +8,14 @@ public:
     float desiredf;
     float actualp;
     float desiredp;
-    float dutycycle;
+    float actualpre;
+    float desiredpre;
+    float actualdc;
+    float desireddc;
     float forceterm;
     float positionterm;
-    float weightf;
-    float weightp;
 private:
-    Serial serial;
+    // Serial serial;
 public:
     Output();
     void init();

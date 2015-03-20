@@ -31,7 +31,7 @@ ControlModule::ControlModule() {
     positionff = new PiecewiseFit(POSITION_LENGTH, POSITION_THRESHOLDS, POSITION_SLOPES, POSITION_OFFSETS);
     pressureff = new PiecewiseFit(PRESSURE_LENGTH, PRESSURE_THRESHOLDS, PRESSURE_SLOPES, PRESSURE_OFFSETS);
 
-    forcepid = new PID(alpha, 80, 90, 0, 25, 5, 0, 0.075, (-0.05));
+    forcepid = new PID(alpha, 80, 90, 0, 25, 5, 0);
     positionpid = new PID(alpha, 50, 25, 0, 75, 75, 0);
     pressurepid = new PID(alpha, 5, 1, 0.5);
 
@@ -74,9 +74,6 @@ float ControlModule::computeDutycycle(float desiredpressure, float actualpressur
 }
 
 float ControlModule::compute(float actualf, float actualp, float actualpre, float time) {
-    float weightp = 1;
-    float weightf = 1;
-
     float forceterm = 0;
     float positionterm = 0;
 
@@ -86,24 +83,35 @@ float ControlModule::compute(float actualf, float actualp, float actualpre, floa
 
     switch (mode) {
         case ControlMode::hybrid:
-            weightp = computeWeight(actualf, desiredf, actualp, desiredp);
-            weightf = 1 - weightp;
-            // Fallthru
-        case ControlMode::force:
-            forceterm = computeForceTerm(actualf, actualp, time);
-            weightp = 1 - weightf;
-            // Fallthru
-        case ControlMode::position:
             positionterm = computePositionTerm(actualp, time);
-            weightf = 1 - weightp;
+            forceterm = computeForceTerm(actualf, actualp, time);
 
-            pressure = (weightf * forceterm) + (weightp* positionterm);
+            pressure = fmin(forceterm, positionterm);
             cap(0.0, &pressure, 25.0);
 
             adjusted_pressure = 0.0122*pressure + 0.1619;
             dutycycle = computeDutycycle(adjusted_pressure, actualpre, time);
             cap(0.0, &dutycycle, 1.0);
             break;
+
+        case ControlMode::force:
+            pressure = computeForceTerm(actualf, actualp, time);
+            cap(0.0, &pressure, 25.0);
+
+            adjusted_pressure = 0.0122*pressure + 0.1619;
+            dutycycle = computeDutycycle(adjusted_pressure, actualpre, time);
+            cap(0.0, &dutycycle, 1.0);
+            break;
+
+        case ControlMode::position:
+            pressure = computePositionTerm(actualp, time);
+            cap(0.0, &pressure, 25.0);
+
+            adjusted_pressure = 0.0122*pressure + 0.1619;
+            dutycycle = computeDutycycle(adjusted_pressure, actualpre, time);
+            cap(0.0, &dutycycle, 1.0);
+            break;
+
         case ControlMode::pressure:
             adjusted_pressure = 0.0122*desiredpre + 0.1619;
             dutycycle = computeDutycycle(adjusted_pressure, actualpre, time);
@@ -144,14 +152,4 @@ void ControlModule::setDesiredPressure(float pressure) {
 void ControlModule::setDesiredDC(float dutycycle) {
     cap(0.0, &dutycycle, 1.0);
     desireddc = dutycycle;
-}
-
-float ControlModule::computeWeight(float actualf, float desiredf, float actualp, float desiredp) {
-    float y_norm = (actualf - CONTACT) / (desiredf - CONTACT);
-    cap(0, &y_norm, 1);
-    float x_norm = (actualp - NEUTRAL) / (desiredp - NEUTRAL);
-    cap(0, &x_norm, 1);
-
-    float power = (-15) * (0.5 + (x_norm / 2) - y_norm);
-    return (1 / (1 + pow(EULER, power)));
 }

@@ -1,22 +1,22 @@
 #include "PID.h"
 
 PID::PID(float alpha, float kp, float ki, float kd) {
-	init(alpha, kp, ki, kd, kp, ki, kd, 500, (-500)); // TODO: Sentinel values
+	init(alpha, kp, ki, kd, kp, ki, kd, 500); // TODO: Sentinel value
 }
 
 PID::PID(float alpha, float kp_p, float ki_p, float kd_p, float kp_n, float ki_n, float kd_n) {
-	init(alpha, kp_p, ki_p, kd_p, kp_n, ki_n, kd_n, 500, (-500)); // TODO: Sentinel values
+	init(alpha, kp_p, ki_p, kd_p, kp_n, ki_n, kd_n, 500); // TODO: Sentinel value
 }
 
-PID::PID(float alpha, float kp_p, float ki_p, float kd_p, float kp_n, float ki_n, float kd_n, float ithreshold_p, float ithreshold_n) {
-	init(alpha, kp_p, ki_p, kd_p, kp_n, ki_n, kd_n, ithreshold_p, ithreshold_n);
+PID::PID(float alpha, float kp_p, float ki_p, float kd_p, float kp_n, float ki_n, float kd_n, float threshold) {
+	init(alpha, kp_p, ki_p, kd_p, kp_n, ki_n, kd_n, threshold);
 }
 
 PID::~PID() {
 
 }
 
-void PID::init(float alpha, float kp_p, float ki_p, float kd_p, float kp_n, float ki_n, float kd_n, float ithreshold_p, float ithreshold_n) {
+void PID::init(float alpha, float kp_p, float ki_p, float kd_p, float kp_n, float ki_n, float kd_n, float threshold) {
 	this->alpha = alpha;
 	this->kp_p = kp_p;
 	this->ki_p = ki_p;
@@ -27,8 +27,7 @@ void PID::init(float alpha, float kp_p, float ki_p, float kd_p, float kp_n, floa
 	iterm = 0;
 	l_error = 0;
 	l_time = 0;
-	this->ithreshold_p = ithreshold_p;
-	this->ithreshold_n = ithreshold_n;
+	this->threshold = threshold;
 }
 
 float PID::computeStep(float error, float time) {
@@ -38,17 +37,11 @@ float PID::computeStep(float error, float time) {
 
 	if(error >= 0) {
         pterm = kp_p * error;
-        if(error < ithreshold_p)
-            iterm = (iterm * alpha) + (ki_p * error * timestep);
-        else
-            iterm = (iterm * alpha);
+        iterm = (iterm * alpha) + (ki_p * error * timestep);
         dterm = kd_p * (error - l_error) / timestep;
     } else {
         pterm = kp_n * error;
-        if(error > (ithreshold_n))
-            iterm = (iterm * alpha) + (ki_n * error * timestep);
-        else
-            iterm = (iterm * alpha);
+        iterm = (iterm * alpha) + (ki_n * error * timestep);
         dterm = kd_n * (error - l_error) / timestep;
     }
 

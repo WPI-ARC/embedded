@@ -36,7 +36,6 @@ public:
     void setDesiredDC(float dutycycle);
     void setControlMode(ControlMode mode);
 private:
-    float computeWeight(float actualf, float desiredf, float actualp, float desiredp);
     float computeForceTerm(float actualf, float actualp, float time);
     float computePositionTerm(float actualp, float time);
     float computeDutycycle(float desiredpre, float actualpre, float time);

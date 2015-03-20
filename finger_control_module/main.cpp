@@ -52,7 +52,7 @@ int main(void) {
     solenoid.write(0.0);
     i2c.frequency(400000);
 
-    serial.printf("Begin Main\r\n");
+    pc.printf("Begin Main\r\n");
 
     controller[0] = new ControlModule();
 
