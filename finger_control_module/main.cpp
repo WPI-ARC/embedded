@@ -103,7 +103,7 @@ void frameReceivedCB(char* buffer) {
     uint8_t len = buffer[4];
     char data[len];
     memcpy(data, buffer + 5, len);
-    pc.printf("Recv cmd, data: %d, [%s]\r\n", command, data);
+    //pc.printf("Recv cmd, data: %d, [%s]\r\n", command, data);
     // Respond
     char response[eth_buffer_size] = {};
     switch (command) {
@@ -128,5 +128,5 @@ void frameReceivedCB(char* buffer) {
     response[10] = floatptr[1];
     response[11] = floatptr[2];
     response[12] = floatptr[3];
-    udp.sendTo(miso, response, eth_buffer_size);
+    //udp.sendTo(miso, response, eth_buffer_size);
 }

@@ -7,3 +7,7 @@ Output::Output() {
 void Output::init() {
 	// serial.baud(115200);
 }
+
+void Output::printf(const char* string) {
+
+}
