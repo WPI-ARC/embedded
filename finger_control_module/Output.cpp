@@ -1,6 +1,7 @@
 #include "Output.h"
 
-Output::Output() {
+Output::Output(printable* printables) {
+	this->printables = printables;
 	// serial = new Serial(USBTX, USBRX);
 }
 
@@ -8,6 +9,10 @@ void Output::init() {
 	// serial.baud(115200);
 }
 
-void Output::printf(const char* string) {
+void Output::printp(int num) {
+	//serial.printf();
+}
+
+void Output::prints(const char* string) {
 
 }

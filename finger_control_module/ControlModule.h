@@ -1,6 +1,7 @@
 #pragma once
 #include "PID.h"
 #include "PiecewiseFit.h"
+#include "Printable.h"
 
 enum class ControlMode {
     none,
@@ -13,6 +14,7 @@ enum class ControlMode {
 
 class ControlModule {
     ControlMode mode;
+    printable* print;
     float alpha;
     PiecewiseFit* forceff;
     PiecewiseFit* positionff;
@@ -27,7 +29,7 @@ class ControlModule {
     float desiredpre;
     float desireddc;
 public:
-    ControlModule();
+    ControlModule(printable* print);
     ~ControlModule();
     float compute(float actualf, float actualp, float actualpre, float time);
     void setMaximumForce(float force);

@@ -1,26 +1,18 @@
 #pragma once
 #include "mbed.h"
+#include "Printable.h"
 
 class Output {
 public:
-    int time;
-    float actualf;
-    float desiredf;
-    float actualp;
-    float desiredp;
-    float actualpre;
-    float desiredpre;
-    float actualdc;
-    float desireddc;
-    float forceterm;
-    float positionterm;
+    printable* printables;
 private:
     // Serial serial;
 public:
-    Output();
+    Output(printable* printables);
     void init();
     void printpc();
     void printeth();
-    void printf(const char* string);
+    void printp(int num);
+    void prints(const char* string);
 private:
 };

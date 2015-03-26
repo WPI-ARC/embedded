@@ -5,6 +5,7 @@
 #include "ControlModule.h"
 #include "Ethernet.h"
 #include "Output.h"
+#include "Printable.h"
 
 #define CONTACT 0.05
 #define TIMESTEP 0.01
@@ -15,7 +16,8 @@ void frameReceivedCB(char* buffer);
 
 PwmOut solenoid(PTA2);
 
-Output pc;
+printable printables[4];
+Output pc(printables);
 I2C i2c(PTE25, PTE24);
 Ethernet ethernet;
 
@@ -52,16 +54,16 @@ int main(void) {
     solenoid.write(0.0);
     i2c.frequency(400000);
 
-    pc.printf("Begin Main\r\n");
+    pc.prints("Begin Main\r\n");
 
-    controller[0] = new ControlModule();
+    controller[0] = new ControlModule(&printables[0]);
 
-    pc.printf("Control Object Created\r\n");
+    pc.prints("Control Object Created\r\n");
 
     fcontroller.attach(&doControl, TIMESTEP);
     timer.start();
     
-    pc.printf("Begin Main Loop\r\n");
+    pc.prints("Begin Main Loop\r\n");
     while(1) {
         // pc.printf("l");
         // pc.printf("%i, %f, %f, %f, %f, %f, %f, %f, %f, %f\r\n", timer.read_ms(), actualf, desiredf, actualp, desiredp, dutycycle, forceterm, positionterm, weightf, weightp);
@@ -80,7 +82,7 @@ int main(void) {
             controlFlag = 0;
 
             if(i2c.read(addr[0], buf, 100, 0) != 0) {
-                pc.printf("Failed\n\r");
+                pc.prints("Failed\n\r");
             }
 
             actualf = fbuf[0];
@@ -105,7 +107,7 @@ void frameReceivedCB(char* buffer) {
     memcpy(data, buffer + 5, len);
     //pc.printf("Recv cmd, data: %d, [%s]\r\n", command, data);
     // Respond
-    char response[eth_buffer_size] = {};
+    char response[eth_buffer_size] = {}; // why did I do this?
     switch (command) {
             case 0: // Set finger forces/positions
                 break;

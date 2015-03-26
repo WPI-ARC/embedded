@@ -23,7 +23,9 @@ float PRESSURE_THRESHOLDS[5] = {0.3191,  0.2937, 0.2494,  0.2046, 0.0};
 float PRESSURE_SLOPES[5]     = {1.6105,  2.9458, 1.6951,  2.7928, 1.2196};
 float PRESSURE_OFFSETS[5]    = {0.1610, -0.2651, 0.1022, -0.1716, 0.1503};
 
-ControlModule::ControlModule() {
+ControlModule::ControlModule(printable* print) {
+    this->print = print;
+
     mode = ControlMode::none;
 
     alpha = 0.994;
@@ -126,6 +128,18 @@ float ControlModule::compute(float actualf, float actualp, float actualpre, floa
             dutycycle = 0;
             break;
     }
+
+    print->time         = time;
+    print->actualf      = actualf;
+    print->desiredf     = desiredf;
+    print->actualp      = actualp;
+    print->desiredp     = desiredp;
+    print->actualpre    = actualpre;
+    print->desiredpre   = desiredpre;
+    print->actualdc     = dutycycle;
+    print->desireddc    = desireddc;
+    print->forceterm    = forceterm;
+    print->positionterm = positionterm;
 
     return dutycycle;
 }
