@@ -6,13 +6,20 @@ class Output {
 public:
     printable* printables;
 private:
-    // Serial serial;
+    char buffer[100];
+    int index = 0;
+    int b_available = 100;
+    Serial* serial;
 public:
     Output(printable* printables);
+    ~Output();
+    void tick();
+    void printp(int num);
+    int prints(const char* string);
+    int prints(const char* string, int length);
+    int available();
+private:
     void init();
     void printpc();
     void printeth();
-    void printp(int num);
-    void prints(const char* string);
-private:
 };

@@ -65,6 +65,8 @@ int main(void) {
     
     pc.prints("Begin Main Loop\r\n");
     while(1) {
+        pc.tick();
+
         // pc.printf("l");
         // pc.printf("%i, %f, %f, %f, %f, %f, %f, %f, %f, %f\r\n", timer.read_ms(), actualf, desiredf, actualp, desiredp, dutycycle, forceterm, positionterm, weightf, weightp);
     
