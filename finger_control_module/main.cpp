@@ -101,14 +101,16 @@ int main(void) {
     timer.start();
     
     while(1) {
-        // calibrate pressure and position stepping dutycycle
-        // pc.printf("%i, %f, %f, %f, %f, %f\r\n", timer.read_ms(), dutycycle, actualpre, stretch0, stretch1, stretch2);
+        // CALIB: use to calibrate pressure and position stepping dutycycle
         // pc.printf("%i, %f, %f, %f, %f\r\n", timer.read_ms(), dutycycle, actualpre, actualp, actualf);
+        
+        // use for checking sensor values
+        // pc.printf("%i, %f, %f, %f, %f, %f\r\n", timer.read_ms(), dutycycle, actualpre, stretch0, stretch1, stretch2);
 
         // debugging force
         // pc.printf("%i, %f, %f, %f, %f, %f, %f, %f, %f, %f\r\n", timer.read_ms(), actualf, desiredf, dutycycle, f_pterm, f_iterm, f_dterm, f_positionff, actualp, actualpre);
 
-        // debuging prius
+        // debugging force-position
         // pc.printf("%i, %f, %f, %f, %f, %f, %f, %f\r\n", timer.read_ms(), actualf, actualp, desiredp, positionterm, p_positionff, f_positionff, forcelimiter);
 
         // standard print
@@ -254,7 +256,7 @@ void computeControl(void) {
         }
     }
     
-    dutycycle = pre_pterm + pre_iterm + pre_dterm + pressureff;
+    dutycycle = pre_pterm + pre_iterm + pre_dterm + pressureff; // CALIB: remove this line for calibration
     cap(0.0, &dutycycle, 1.0);
 
     solenoid.write(dutycycle);
@@ -273,7 +275,7 @@ void pwmout(void) {
 }
 
 void increment(void) {
-    // calibrate pressure & position
+    // CALIB: calibrate pressure & position
     // if(step < 10000) {
     //     if(((step / 1000) % 2) == 0) {
     //         dutycycle = ((float)(step % 1000) / 1000.0) * 0.15 + 0.2;
@@ -305,8 +307,8 @@ void increment(void) {
     //     step++;
     // }
 
-    desiredf = 0.1;
-    desiredp = 0.35;
+    // desiredf = 0.1;
+    // desiredp = 0.35;
     // if(step < 50) {
     //     desiredp = 0.25;
     // } else if(step < 690) {
