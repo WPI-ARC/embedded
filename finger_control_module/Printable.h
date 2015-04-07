@@ -1,6 +1,7 @@
 #pragma once
 
 struct printable {
+    char* string;
     float time;
     float actualf;
     float desiredf;

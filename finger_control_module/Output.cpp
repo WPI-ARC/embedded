@@ -11,14 +11,19 @@ Output::~Output() {
 
 void Output::init() {
 	serial->baud(115200);
+	printables[0].string = (char*)malloc(100*sizeof(char));
 }
 
 void Output::tick() {
 	printpc();
 }
 
-void Output::printp(int num) {
-	//serial.printf();
+int Output::printp(int num) {
+	snprintf(printables[num].string, 100, "%f, %f, %f, %f, %f, %f, %f, %f\r\n",
+			printables[num].time, printables[num].actualf, printables[num].desiredf,
+			printables[num].actualp, printables[num].desiredp, printables[num].actualdc,
+			printables[num].forceterm, printables[num].positionterm);
+	return prints(printables[num].string);
 }
 
 int Output::prints(const char* string) {

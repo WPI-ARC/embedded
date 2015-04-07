@@ -13,13 +13,13 @@ private:
 public:
     Output(printable* printables);
     ~Output();
+    void init();
     void tick();
-    void printp(int num);
+    int printp(int num);
     int prints(const char* string);
     int prints(const char* string, int length);
     int available();
 private:
-    void init();
     void printpc();
     void printeth();
 };
