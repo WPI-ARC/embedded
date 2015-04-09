@@ -15,4 +15,5 @@ public:
     void send(char* response);
     int recieve(char* buffer);
 private:
+	void frameReceivedCB(char* buffer);
 };
