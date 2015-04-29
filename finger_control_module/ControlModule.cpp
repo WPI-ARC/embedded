@@ -97,7 +97,8 @@ float ControlModule::compute(float actualf, float actualp, float actualpre, floa
             break;
 
         case ControlMode::force:
-            pressure = computeForceTerm(actualf, actualp, time);
+            forceterm = computeForceTerm(actualf, actualp, time);
+            pressure = forceterm;
             cap(0.0, &pressure, 25.0);
 
             adjusted_pressure = 0.0122*pressure + 0.1619;
@@ -106,7 +107,8 @@ float ControlModule::compute(float actualf, float actualp, float actualpre, floa
             break;
 
         case ControlMode::position:
-            pressure = computePositionTerm(actualp, time);
+            positionterm = computePositionTerm(actualp, time);
+            pressure = positionterm;
             cap(0.0, &pressure, 25.0);
 
             adjusted_pressure = 0.0122*pressure + 0.1619;
@@ -117,6 +119,7 @@ float ControlModule::compute(float actualf, float actualp, float actualpre, floa
         case ControlMode::pressure:
             adjusted_pressure = 0.0122*desiredpre + 0.1619;
             dutycycle = computeDutycycle(adjusted_pressure, actualpre, time);
+            cap(0.0, &dutycycle, 1.0);
             break;
         case ControlMode::dutycycle:
             dutycycle = desireddc;

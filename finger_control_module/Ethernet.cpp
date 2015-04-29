@@ -1,7 +1,7 @@
 #include "Ethernet.h"
 
 Ethernet::Ethernet() {
-
+    connected = 0;
 }
 
 void Ethernet::init(void) {
@@ -11,6 +11,11 @@ void Ethernet::init(void) {
     udp.bind(10001);
     mosi.set_address("192.168.1.2", 10001);
     miso.set_address("192.168.1.2", 10002);
+    connected = 1;
+}
+
+int Ethernet::isConnected(void) {
+    return connected;
 }
 
 void Ethernet::send(char* response) {

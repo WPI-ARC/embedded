@@ -12,6 +12,9 @@ Output::~Output() {
 void Output::init() {
 	serial->baud(115200);
 	printables[0].string = (char*)malloc(100*sizeof(char));
+	printables[1].string = (char*)malloc(100*sizeof(char));
+	printables[2].string = (char*)malloc(100*sizeof(char));
+	printables[3].string = (char*)malloc(100*sizeof(char));
 }
 
 void Output::tick() {
@@ -19,8 +22,8 @@ void Output::tick() {
 }
 
 int Output::printp(int num) {
-	snprintf(printables[num].string, 100, "%f, %f, %f, %f, %f, %f, %f, %f\r\n",
-			printables[num].time, printables[num].actualf, printables[num].desiredf,
+	snprintf(printables[num].string, 100, "%d, %f, %f, %f, %f, %f, %f, %f, %f\r\n", num,
+			printables[num].time, printables[num].actualpre, printables[num].desiredpre,
 			printables[num].actualp, printables[num].desiredp, printables[num].actualdc,
 			printables[num].forceterm, printables[num].positionterm);
 	return prints(printables[num].string);
@@ -34,10 +37,10 @@ int Output::prints(const char* string, int length) {
 	if(length > b_available) {
 		return length - b_available;
 	} else {
-		int i = (index + (100 - b_available)) % 100;
+		int i = (index + (100 - b_available) - 1) % 100;
 		for(int j = 0; j < length; j++) {
 			i++;
-			if(i > 100)
+			if(i == 100)
 				i = 0;
 
 			buffer[i] = string[j];
@@ -52,7 +55,7 @@ int Output::available(void) {
 }
 
 void Output::printpc() {
-	if(serial->writeable() && (b_available < 100)) {
+	while(serial->writeable() && (b_available < 100)) {
 		serial->printf("%c", buffer[index]);
 
 		b_available++;
