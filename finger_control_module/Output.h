@@ -5,11 +5,12 @@
 class Output {
 public:
     printable* printables;
+    Serial* serial;
 private:
     char buffer[100];
     int index = 0;
     int b_available = 100;
-    Serial* serial;
+    // Serial* serial;
 public:
     Output(printable* printables);
     ~Output();

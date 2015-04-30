@@ -37,8 +37,8 @@ ControlModule::ControlModule(printable* print) {
     positionpid = new PID(alpha, 50, 25, 0, 75, 75, 0);
     pressurepid = new PID(alpha, 5, 1, 0.5);
 
-    desiredf = 0.1;
-    desiredp = 0.2;
+    desiredf = 0.0;
+    desiredp = 0.0;
     desiredpre = 0.0;
     desireddc = 0.0;
 }
