@@ -78,7 +78,7 @@ int main(void) {
     pc.serial->printf("Eth Init\n\r");
     ethernet.init("192.168.1.3", "255.255.255.0", "0.0.0.0");
     ethernet.connect();
-    udp.set_blocking(false, 0);
+    udp.set_blocking(false, 1); // timeout of zero breaks things
     udp.bind(10001);
     mosi.set_address("192.168.1.2", 10001);
     miso.set_address("192.168.1.2", 10002);
@@ -91,15 +91,15 @@ int main(void) {
     while(1) {
         pc.tick();
         // udp.sendTo(miso, eth_buffer, 256);
-        int read = udp.receiveFrom(mosi, eth_buffer, 256);
-        if(read == 256) {
-            // pc.serial->printf("Frame\r\n");
-            frameReceivedCB(eth_buffer);
-        } else if(read > 0) {
-            // pc.prints("Partial\r\n"); // partial frame, kinda an error
-        } else {
-            // pc.prints("Empty\r\n"); // nothing recieved
-        }
+        // int read = udp.receiveFrom(mosi, eth_buffer, 256);
+        // if(read == 256) {
+        //     // pc.serial->printf("Frame\r\n");
+        //     // frameReceivedCB(eth_buffer);
+        // } else if(read > 0) {
+        //     // pc.prints("Partial\r\n"); // partial frame, kinda an error
+        // } else {
+        //     // pc.prints("Empty\r\n"); // nothing recieved
+        // }
 
         if(controlFlag) {
             pc.printp(nextController);
@@ -134,35 +134,35 @@ void frameReceivedCB(char* buffer) {
     // memcpy(data, buffer + 5, len);
     float* floatdata;
 
-    // 4 + 4 + 4 + 4 + 4 + 1
+    // 4 + 4 + 4 + 4 + 4 + 1 (+3)
     for(int i = 0; i < 4; i++) {
         floatdata = (float *)(data + (i * 24));
-        // pc.serial->printf("%d, %d, %f, %f, %f, %f\r\n", i, data[(i * 24) + 20], floatdata[0], floatdata[1], floatdata[2], floatdata[3]);
+    //     // pc.serial->printf("%d, %d, %f, %f, %f, %f\r\n", i, data[(i * 24) + 20], floatdata[0], floatdata[1], floatdata[2], floatdata[3]);
 
-        controller[i]->setDesiredDC(floatdata[0]);
-        controller[i]->setDesiredPressure(floatdata[1]);
-        controller[i]->setMaximumForce(floatdata[2]);
-        controller[i]->setDesiredPosition(floatdata[3]);
+    //     controller[i]->setDesiredDC(floatdata[0]);
+    //     controller[i]->setDesiredPressure(floatdata[1]);
+    //     controller[i]->setMaximumForce(floatdata[2]);
+    //     controller[i]->setDesiredPosition(floatdata[3]);
 
-        ControlMode mode = ControlMode::none;
-        switch(data[(i * 24) + 20]) {
-            case 1:
-                mode = ControlMode::dutycycle;
-                break;
-            case 2:
-                mode = ControlMode::force;
-                break;
-            case 3:
-                mode = ControlMode::position;
-                break;
-            case 4:
-                mode = ControlMode::pressure;
-                break;
-            default:
-                mode = ControlMode::none;
-                break;
-        }
+    //     ControlMode mode = ControlMode::none;
+    //     switch(data[(i * 24) + 20]) {
+    //         case 1:
+    //             mode = ControlMode::dutycycle;
+    //             break;
+    //         case 2:
+    //             mode = ControlMode::force;
+    //             break;
+    //         case 3:
+    //             mode = ControlMode::position;
+    //             break;
+    //         case 4:
+    //             mode = ControlMode::pressure;
+    //             break;
+    //         default:
+    //             mode = ControlMode::none;
+    //             break;
+    //     }
 
-        controller[i]->setControlMode(mode);
+    //     controller[i]->setControlMode(mode);
     }
 }
