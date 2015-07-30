@@ -121,6 +121,8 @@ int main(void) {
             nextController++;
             if(nextController == 4)
                 nextController = 0;
+
+            timer.reset();
         }
     }
 }
@@ -137,7 +139,7 @@ void frameReceivedCB(char* buffer) {
     // 4 + 4 + 4 + 4 + 4 + 1 (+3)
     for(int i = 0; i < 4; i++) {
         floatdata = (float *)(data + (i * 24));
-    //     // pc.serial->printf("%d, %d, %f, %f, %f, %f\r\n", i, data[(i * 24) + 20], floatdata[0], floatdata[1], floatdata[2], floatdata[3]);
+        // pc.serial->printf("%d, %d, %f, %f, %f, %f\r\n", i, data[(i * 24) + 20], floatdata[0], floatdata[1], floatdata[2], floatdata[3]);
 
     //     controller[i]->setDesiredDC(floatdata[0]);
     //     controller[i]->setDesiredPressure(floatdata[1]);

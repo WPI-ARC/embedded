@@ -31,7 +31,7 @@ void PID::init(float alpha, float kp_p, float ki_p, float kd_p, float kp_n, floa
 }
 
 float PID::computeStep(float error, float time) {
-	float timestep = time - l_time;
+	float timestep = time; //- l_time;
 	float pterm = 0;
 	float dterm = 0;
 
